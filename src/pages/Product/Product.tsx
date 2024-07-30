@@ -31,7 +31,7 @@ const Product = () => {
         setRefreshKey(prevKey => prevKey + 1)
     }
 
-    const showVariantModal = (group) => {
+    const showVariantModal = (group: any) => {
         setSelectedGroup(group);
         setIsVariantModalVisible(true);
     };

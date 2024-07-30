@@ -1,6 +1,6 @@
 import { Select, Button, Form, Input, Modal, message } from "antd"
 import { useEffect, useState } from "react"
-import { addProductFeaturesAPI, registerProductAPI } from "../../api/product"
+import { addProductFeaturesAPI, addProductStockAPI, registerProductAPI } from "../../api/product"
 import { getSellersAPI } from "../../api/seller"
 import { getCategoriesAPI, registerCategoryAPI } from "../../api/category"
 import { getFeaturesAPI } from "../../api/feature"
@@ -20,7 +20,6 @@ const ProductFormModal = ({ visible, onCancel, onSuccess }: any) => {
     const branches = [{ id_sucursal: 3, nombre: 'Prado' }]
 
     const handleFinish = async (productData: any) => {
-        // const sendToFeaturesAPI = new Map<string, []>()
         setLoading(true);
         const realCombinations = combinations
             .filter((combination: any) => combination.price !== 0 || combination.stock !== 0)
@@ -52,65 +51,69 @@ const ProductFormModal = ({ visible, onCancel, onSuccess }: any) => {
             "group": productData.nombre_producto,
             "variants": productVariants
         }
-        console.log(productVariants, 'productvariants')
-        console.log(realCombinations, 'real')
-        // const res = await registerProductAPI(formattedProductData)
+        const res = await registerProductAPI(formattedProductData)
 
-        // if (res.products) {
-        message.success('Producto registrado con variantes')
+        if (res.products) {
+            message.success('Producto registrado con variantes')
 
-        const productFeaturesMap = new Map();
+            const productFeaturesMap = new Map();
 
-        // realCombinations.forEach((combination: any) => {
-        //     const featuresForProduct = selectedFeatures.map((featureId: any) => {
-        //         const feature = features.find((f: any) => f.id_caracteristicas.toString() == featureId);
-        //         return {
-        //             feature: feature?.feature,
-        //             value: combination[featureId.toString()]
-        //         };
-        //     });
-        //     const productId = res.products.find((p: any) => p.nombre_producto.includes(`${productData.nombre_producto} ${featuresForProduct.map(f => f.value).join(' ')}`)).id_producto;
+            realCombinations.forEach((combination: any) => {
+                const featuresForProduct = selectedFeatures.map((featureId: any) => {
+                    const feature = features.find((f: any) => f.id_caracteristicas.toString() == featureId);
+                    return {
+                        feature: feature?.feature,
+                        value: combination[featureId.toString()]
+                    };
+                });
+                const productId = res.products.find((p: any) => p.nombre_producto.includes(`${productData.nombre_producto} ${featuresForProduct.map(f => f.value).join(' ')}`)).id_producto;
 
-        //     if (!productFeaturesMap.has(productId)) {
-        //         productFeaturesMap.set(productId, [])
-        //     }
+                if (!productFeaturesMap.has(productId)) {
+                    productFeaturesMap.set(productId, [])
+                }
 
-        //     productFeaturesMap.get(productId).push(...featuresForProduct)
-        // })
+                productFeaturesMap.get(productId).push(...featuresForProduct)
+            })
 
-
-        // await createProductFeatures(res.products, productFeaturesMap)
-        // await createProductStock(res.products,
-        // onSuccess()
-        // } else {
-        //     message.error('Error al crear los productos, inténtelo de nuevo')
-        // }
-
+            await createProductStock(res.products, productVariants, productData.sucursal)
+            await createProductFeatures(res.products, productFeaturesMap)
+            onSuccess()
+        } else {
+            message.error('Error al crear los productos, inténtelo de nuevo')
+        }
         setLoading(false);
     }
 
     const createProductFeatures = async (products: any, features: any) => {
-        const promises = products.map(async (product: any) => {
+        const promises = products.map((product: any) => {
             const id_producto = product.id_producto
             const productFeatures: any = features.get(id_producto)
-            await addProductFeaturesAPI({
+            return addProductFeaturesAPI({
                 productId: id_producto, features: productFeatures
             })
         });
-        console.log({products, features, promises})
-        await Promise.all(promises)
+
+        return await Promise.all(promises)
     }
 
-    const createProductStock = async ( products: any, stock: any) => {
-        const promises = products.forEach((product: any) => {
-            const id_producto = product.id_producto
-            const productStock = stock.get(id_producto)
-            // addProductStockAPI({
-            //     products: {
-            //     }
-            // })
+    const createProductStock = async (products: any, stockProducts: any, shippingId: any) => {
+
+        const productsWithStock: any = []
+        stockProducts.forEach((stockProduct: any) => {
+            const matchedProduct = products.find((prod: any) =>
+                prod.nombre_producto == stockProduct.nombre_producto
+            )
+            if (matchedProduct) {
+                const productToAdd = {
+                    id_producto: matchedProduct.id_producto,
+                    cantidad_por_sucursal: stockProduct.stock
+                }
+                productsWithStock.push(productToAdd)
+            }
         })
-        await Promise.all(promises)
+
+        const data = { branch: shippingId, products: productsWithStock }
+        return await addProductStockAPI(data)
     }
 
     const createCategory = async () => {

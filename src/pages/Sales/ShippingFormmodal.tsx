@@ -38,7 +38,7 @@ function ShippingFormModal({ visible, onCancel, onSuccess, selectedProducts, tot
             "cargo_delivery": parseInt(shippingData.cargo_delivery),
             "estado_pedido": estadoPedidoMap[intEstadoPedido],
             "id_trabajador": 1,
-            // SUCURSAL PRADO POR DEFECTO, CAMBIAR CUANDO EXISTAN MAS SUCURSALES
+            //TODO: SUCURSAL PRADO POR DEFECTO, CAMBIAR CUANDO EXISTAN MAS SUCURSALES
             "id_sucursal": 3,
         }
         console.log(apiShippingData)
