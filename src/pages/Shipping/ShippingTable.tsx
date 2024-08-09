@@ -1,4 +1,4 @@
-import { Button, DatePicker, Input, Table } from 'antd';
+import { Button, DatePicker, Input, Select, Table } from 'antd';
 import { useEffect, useState } from 'react';
 import { getShippingsAPI } from '../../api/shipping';
 import ShippingInfoModal from './ShippingInfoModal';
@@ -6,6 +6,7 @@ import { InfoCircleOutlined } from '@ant-design/icons';
 import ShippingStateModal from './ShippingStateModal';
 
 const { RangePicker } = DatePicker;
+const { Option } = Select
 
 const ShippingTable = (refreshKey: any) => {
     const [shippingData, setShippingData] = useState([])
@@ -33,7 +34,6 @@ const ShippingTable = (refreshKey: any) => {
                 ...pedido,
                 key: pedido.id_pedido
             }));
-            console.log(dataWithKey, 'fetched>')
             setShippingData(dataWithKey)
         } catch (error) {
             console.error("Error fetching shipping data:", error);
@@ -42,7 +42,11 @@ const ShippingTable = (refreshKey: any) => {
     const handleSearch = () => {
         const filterByLocationAndDate = (data: any) => {
             return data.filter((pedido: any) => {
-                const matchesLocation = !selectedLocation || pedido.lugar_entrega.toLowerCase().includes(selectedLocation.toLowerCase());
+                const isOtro = selectedLocation === 'Otro'
+                const matchesLocation = isOtro
+                    ? pedido.lugar_entrega.toLowerCase() !== 'me encargo'
+                    : pedido.lugar_entrega.toLowerCase() === selectedLocation.toLowerCase();
+                // const matchesLocation = !selectedLocation || pedido.lugar_entrega.toLowerCase().includes(selectedLocation.toLowerCase());
                 const matchesDateRange = dateRange[0] && dateRange[1] ? (
                     new Date(pedido.fecha_pedido) >= dateRange[0] && new Date(pedido.fecha_pedido) <= dateRange[1]
                 ) : true;
@@ -127,12 +131,15 @@ const ShippingTable = (refreshKey: any) => {
     return (
         <div>
             <div style={{ marginBottom: 16 }}>
-                <Input
+                <Select
                     placeholder="Buscar por lugar de entrega"
                     value={selectedLocation}
-                    onChange={(e) => setSelectedLocation(e.target.value)}
+                    onChange={(value) => setSelectedLocation(value)}
                     style={{ width: 200, marginRight: 8 }}
-                />
+                >
+                    <Option value="Me Encargo">Me encargo</Option>
+                    <Option value="Otro">Otro</Option>
+                </Select>
                 <RangePicker
                     onChange={(dates) => {
                         if (dates && dates[0] && dates[1]) {
