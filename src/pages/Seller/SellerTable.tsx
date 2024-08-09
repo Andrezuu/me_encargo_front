@@ -1,10 +1,14 @@
-import { Table } from 'antd';
+import { Button, Table } from 'antd';
 import { useEffect, useState } from 'react';
 import { getSellersAPI } from '../../api/seller';
+import DebtModal from './DebtModal';
+import { DollarOutlined } from '@ant-design/icons';
 
 const SellerTable = (refreshKey: any) => {
     const [pendingPaymentData, setPendingPaymentData] = useState([]);
     const [onTimePaymentData, setOnTimePaymentData] = useState([]);
+    const [selectedSeller, setSelectedSeller] = useState()
+    const [isModalVisible, setIsModalVisible] = useState(false)
 
     const getRandomInt = (min: number, max: number) => {
         return Math.floor(Math.random() * (max - min + 1) + min)
@@ -48,12 +52,31 @@ const SellerTable = (refreshKey: any) => {
         }
     }
 
+    const showModal = (seller: any) => {
+        setSelectedSeller(seller)
+        setIsModalVisible(true)
+    }
+
+    const handleOk = (values: any) => {
+        setIsModalVisible(false)
+    }
+
+    const handleCancel = () => {
+        setIsModalVisible(false)
+    }
+
 
     useEffect(() => {
         fetchSellers();
     }, [refreshKey]);
 
     const columns = [
+        {
+            key: 'seller_new_debt',
+            render: (_: any, seller: any) => (
+                <Button type='default' onClick={() => showModal(seller)} icon={<DollarOutlined />} />
+            )
+        },
         {
             title: 'Nombre',
             dataIndex: 'nombre',
@@ -100,6 +123,11 @@ const SellerTable = (refreshKey: any) => {
                 title={() => <h2 className='text-2xl font-bold'>Pago al día</h2>}
                 pagination={false}
             />
+            <DebtModal
+                visible={isModalVisible}
+                onOk={handleOk}
+                onCancel={handleCancel}
+                seller={selectedSeller} />
         </div>
     );
 };
